@@ -352,16 +352,10 @@ class ModalNotificarMembro(discord.ui.Modal, title="📬 Notificar Dono do Ticke
             embed = discord.Embed(color=config.COR_PRINCIPAL)
             embed.set_author(name="📬 Notificação — BD Studio", icon_url=config.LOGO_URL)
             embed.description = (
-                f"### Você tem uma nova mensagem!
-
-"
-                f"**╔═ 💬 Mensagem:**
-"
-                f"╚══ {str(self.mensagem)}
-
-"
-                f"**╔═ 🎫 Ticket ID:** `{self.ticket_id}`
-"
+                f"### Você tem uma nova mensagem!\n\n"
+                f"**╔═ 💬 Mensagem:**\n"
+                f"╚══ {str(self.mensagem)}\n\n"
+                f"**╔═ 🎫 Ticket ID:** `{self.ticket_id}`\n"
                 f"╚══ Acesse seu ticket no servidor para responder."
             )
             embed.set_thumbnail(url=config.LOGO_URL)

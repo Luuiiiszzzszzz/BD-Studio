@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import os
 from dotenv import load_dotenv
 
@@ -20,7 +19,7 @@ class BDStudioBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
 
     async def setup_hook(self):
-        from cogs.tickets import TicketCog, ViewPainel, ViewTicketAberto
+        from cogs.tickets import TicketCog, ViewTicketAberto
         from cogs.admin import AdminCog
         from cogs.pagamentos import PagamentoCog
         from cogs.portfolio import PortfolioCog
@@ -30,8 +29,7 @@ class BDStudioBot(commands.Bot):
         await self.add_cog(PagamentoCog(self))
         await self.add_cog(PortfolioCog(self))
 
-        # Registrar views persistentes para funcionar após restart
-        self.add_view(ViewPainel())
+        # Apenas ViewTicketAberto precisa ser persistente
         self.add_view(ViewTicketAberto(ticket_id="persistent", canal_id=0))
 
         guild = discord.Object(id=GUILD_ID)

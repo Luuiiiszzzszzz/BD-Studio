@@ -269,7 +269,10 @@ class ViewTicketAberto(discord.ui.View):
 #  MODAIS DO PAINEL ADMIN
 # ──────────────────────────────────────────────
 class ModalAdicionarMembro(discord.ui.Modal, title="➕ Adicionar Membro"):
-    user_id = discord.ui.TextInput(label="ID do usuário", placeholder="123456789012345678")
+    usuario = discord.ui.TextInput(
+        label="ID ou nome do usuário",
+        placeholder="Ex: 123456789012345678 ou joao_silva"
+    )
 
     def __init__(self, canal_id):
         super().__init__()
@@ -277,7 +280,32 @@ class ModalAdicionarMembro(discord.ui.Modal, title="➕ Adicionar Membro"):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            membro = await interaction.guild.fetch_member(int(str(self.user_id)))
+            entrada = str(self.usuario).strip()
+            membro = None
+
+            # Tentar por ID primeiro
+            if entrada.isdigit():
+                try:
+                    membro = await interaction.guild.fetch_member(int(entrada))
+                except Exception:
+                    pass
+
+            # Tentar por nome/apelido se não achou por ID
+            if not membro:
+                entrada_lower = entrada.lower().lstrip("@")
+                for m in interaction.guild.members:
+                    if (m.name.lower() == entrada_lower or
+                        m.display_name.lower() == entrada_lower or
+                        str(m).lower() == entrada_lower):
+                        membro = m
+                        break
+
+            if not membro:
+                await interaction.response.send_message(
+                    f"❌ Usuário `{entrada}` não encontrado no servidor.", ephemeral=True
+                )
+                return
+
             canal = interaction.guild.get_channel(self.canal_id)
             await canal.set_permissions(membro, view_channel=True, send_messages=True, read_message_history=True)
             embed = discord.Embed(
@@ -292,7 +320,10 @@ class ModalAdicionarMembro(discord.ui.Modal, title="➕ Adicionar Membro"):
 
 
 class ModalRemoverMembro(discord.ui.Modal, title="➖ Remover Membro"):
-    user_id = discord.ui.TextInput(label="ID do usuário", placeholder="123456789012345678")
+    usuario = discord.ui.TextInput(
+        label="ID ou nome do usuário",
+        placeholder="Ex: 123456789012345678 ou joao_silva"
+    )
 
     def __init__(self, canal_id):
         super().__init__()
@@ -300,7 +331,30 @@ class ModalRemoverMembro(discord.ui.Modal, title="➖ Remover Membro"):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            membro = await interaction.guild.fetch_member(int(str(self.user_id)))
+            entrada = str(self.usuario).strip()
+            membro = None
+
+            if entrada.isdigit():
+                try:
+                    membro = await interaction.guild.fetch_member(int(entrada))
+                except Exception:
+                    pass
+
+            if not membro:
+                entrada_lower = entrada.lower().lstrip("@")
+                for m in interaction.guild.members:
+                    if (m.name.lower() == entrada_lower or
+                        m.display_name.lower() == entrada_lower or
+                        str(m).lower() == entrada_lower):
+                        membro = m
+                        break
+
+            if not membro:
+                await interaction.response.send_message(
+                    f"❌ Usuário `{entrada}` não encontrado no servidor.", ephemeral=True
+                )
+                return
+
             canal = interaction.guild.get_channel(self.canal_id)
             await canal.set_permissions(membro, overwrite=None)
             embed = discord.Embed(

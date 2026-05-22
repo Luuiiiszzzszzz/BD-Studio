@@ -194,10 +194,19 @@ class ViewPainel(discord.ui.View):
 #  VIEW: botões dentro do ticket
 # ──────────────────────────────────────────────
 class ViewTicketAberto(discord.ui.View):
-    def __init__(self, ticket_id: str, canal_id: int):
+    def __init__(self, ticket_id: str, canal_id: int, assumido: bool = False):
         super().__init__(timeout=None)
         self.ticket_id = ticket_id
         self.canal_id = canal_id
+        self.assumido = assumido
+        # Aplicar estado inicial dos botões
+        for item in self.children:
+            if hasattr(item, "custom_id"):
+                if item.custom_id == "btn_assumir" and assumido:
+                    item.disabled = True
+                    item.label = "Ticket Assumido"
+                if item.custom_id == "btn_finalizar" and not assumido:
+                    item.disabled = True
 
     @discord.ui.button(label="Assumir Ticket", style=discord.ButtonStyle.success, emoji="✅", custom_id="btn_assumir", row=0)
     async def assumir(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -209,6 +218,13 @@ class ViewTicketAberto(discord.ui.View):
 
         db.assumir_ticket(self.ticket_id, interaction.user.id)
 
+        # Desativar botão assumir e ativar finalizar
+        button.disabled = True
+        button.label = "Ticket Assumido"
+        for item in self.children:
+            if hasattr(item, "custom_id") and item.custom_id == "btn_finalizar":
+                item.disabled = False
+
         embed = discord.Embed(color=config.COR_SUCESSO)
         embed.description = (
             f"### ✅ Ticket Assumido\n"
@@ -216,7 +232,8 @@ class ViewTicketAberto(discord.ui.View):
             f"> Fique à vontade para conversar!"
         )
         embed.set_footer(text=f"BD Studio • {datetime.datetime.now().strftime('%d/%m/%Y às %H:%M')}")
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(embed=embed)
         await log_comando(interaction.guild, interaction.user, "Assumir Ticket", self.ticket_id)
 
     @discord.ui.button(label="Painel Admin", style=discord.ButtonStyle.primary, emoji="🔒", custom_id="btn_painel_admin", row=0)
@@ -242,7 +259,7 @@ class ViewTicketAberto(discord.ui.View):
         embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", custom_id="btn_finalizar", row=0)
+    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", custom_id="btn_finalizar", row=0, disabled=True)
     async def finalizar(self, interaction: discord.Interaction, button: discord.ui.Button):
         await finalizar_ticket(interaction, self.ticket_id)
 
@@ -322,7 +339,7 @@ class ModalNotificarMembro(discord.ui.Modal, title="📬 Notificar Dono do Ticke
     mensagem = discord.ui.TextInput(
         label="Mensagem para o cliente",
         style=discord.TextStyle.paragraph,
-        placeholder="Ex: Seu pedido está pronto! Entre no ticket para mais detalhes.",
+        default="Olá! Temos uma atualização sobre o seu ticket. Por favor, acesse o canal para mais informações.",
         max_length=1000
     )
 

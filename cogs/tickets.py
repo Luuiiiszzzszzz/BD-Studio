@@ -561,8 +561,13 @@ async def finalizar_ticket(interaction: discord.Interaction, ticket_id: str):
                     url=url_pages,
                     style=discord.ButtonStyle.link
                 ))
-            arquivo_transcript = discord.File(caminho_html, filename=f"transcript-{ticket_id}.html")
-            await log_ch.send(embed=t_embed, file=arquivo_transcript, view=view_transcript if url_pages else discord.ui.View())
+            # Se tiver link do GitHub Pages, envia só o embed+botão (sem arquivo)
+            # Se não tiver, envia o arquivo HTML
+            if url_pages:
+                await log_ch.send(embed=t_embed, view=view_transcript)
+            else:
+                arquivo_transcript = discord.File(caminho_html, filename=f"transcript-{ticket_id}.html")
+                await log_ch.send(embed=t_embed, file=arquivo_transcript)
         import os
         os.remove(caminho_html)
     except Exception as e:

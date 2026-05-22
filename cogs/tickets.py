@@ -79,46 +79,35 @@ class ModalDetalhesTicket(discord.ui.Modal):
             icon_url=config.LOGO_URL
         )
         embed.description = (
-            f"### Olá, {user.mention}! Seja bem-vindo. 👋\n"
-            f"> Nossa equipe já foi notificada e irá atendê-lo o mais rápido possível.\n"
-            f"> Enquanto isso, descreva sua situação com o máximo de detalhes."
+            f"Olá {user.mention}, seja bem-vindo ao seu ticket! 👋\n"
+            f"Nossa equipe já foi notificada e irá atendê-lo em breve.\n\u200b"
         )
-
         embed.add_field(
-            name="╔═ 🗂️ CATEGORIA",
-            value=f"╚══ {emoji_cat} **{categoria_nome}**",
+            name="🗂️ Categoria",
+            value=f"{emoji_cat} **{categoria_nome}**",
             inline=True,
         )
         embed.add_field(
-            name="╔═ 🎫 ID DO TICKET",
-            value=f"╚══ `{ticket_id}`",
+            name="🎫 ID do Ticket",
+            value=f"`{ticket_id}`",
             inline=True,
         )
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
         embed.add_field(
-            name="\u200b",
-            value="\u200b",
-            inline=True,
-        )
-        embed.add_field(
-            name="╔═ 📌 ASSUNTO",
-            value=f"╚══ {str(self.assunto)}",
+            name="📌 Assunto",
+            value=f"> {str(self.assunto)}",
             inline=False,
         )
         embed.add_field(
-            name="╔═ 📝 DESCRIÇÃO",
-            value=f"╚══ {str(self.descricao)}",
+            name="📝 Descrição",
+            value=f"> {str(self.descricao)}",
             inline=False,
         )
         embed.add_field(
             name="\u200b",
-            value=(
-                "```fix\n"
-                "⏳ Aguarde — um membro da equipe assumirá em breve.\n"
-                "```"
-            ),
+            value="> ⏳ Aguarde — um membro da equipe irá assumir em breve.",
             inline=False,
         )
-
         embed.set_thumbnail(url=config.LOGO_URL)
         embed.set_footer(
             text=f"BD Studio • {datetime.datetime.now().strftime('%d/%m/%Y às %H:%M')}",
@@ -483,22 +472,21 @@ class TicketCog(commands.Cog):
         embed = discord.Embed(color=config.COR_PRINCIPAL)
         embed.set_author(name="✦ ATENDIMENTO BD STUDIO ✦", icon_url=config.LOGO_URL)
         embed.description = (
-            "### Bem-vindo ao nosso sistema de atendimento!\n"
-            "> Use o menu abaixo para abrir um ticket e aguarde ser atendido pela nossa equipe.\n\u200b"
+            "### 👋 Bem-vindo ao Atendimento BD Studio!\n"
+            "> Selecione uma categoria no menu abaixo para abrir seu ticket.\n"
+            "> Nossa equipe irá atendê-lo o mais rápido possível.\n\u200b"
         )
         embed.add_field(
             name="📌 Regras de Atendimento",
             value=(
-                "```diff\n"
-                "- Não abra tickets sem necessidade\n"
-                "- Não marque a equipe excessivamente\n"
-                "+ Forneça o máximo de detalhes possível\n"
-                "```"
+                "> ❌ Não abra tickets sem necessidade\n"
+                "> ❌ Não marque a equipe excessivamente\n"
+                "> ✅ Forneça o máximo de detalhes possível"
             ),
             inline=False,
         )
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.set_thumbnail(url=config.LOGO_URL)
-        embed.set_image(url="https://i.imgur.com/xxxxxxxxxxx.gif")  # Banner opcional
         embed.set_footer(text="BD Studio • Sistema de Atendimento", icon_url=config.LOGO_URL)
         embed.timestamp = discord.utils.utcnow()
         view = ViewPainel()

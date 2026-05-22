@@ -244,42 +244,45 @@ class ViewTicketAberto(discord.ui.View):
         if staff_role not in interaction.user.roles and admin_role not in interaction.user.roles:
             await interaction.response.send_message("❌ Sem permissão.", ephemeral=True)
             return
-        view = ViewPainelAdmin(ticket_id=self.ticket_id, canal_id=self.canal_id)
-        embed = discord.Embed(color=config.COR_PRINCIPAL)
-        embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
-        embed.description = (
-            "Gerencie este ticket usando os botões abaixo:\n\u200b"
+
+        ticket = db.buscar_ticket(self.ticket_id)
+
+        # Header embed
+        header = discord.Embed(color=config.COR_PRINCIPAL)
+        header.set_author(name="🔒 PAINEL ADMINISTRATIVO DO TICKET", icon_url=config.LOGO_URL)
+        header.description = (
+            f"Olá {interaction.user.mention}, seja bem-vindo ao painel administrativo do ticket.\n"
+            f"Aqui você encontrará todas as opções de gerenciamento do ticket, caso haja alguma "
+            f"dúvida se informe com os responsáveis."
         )
-        embed.add_field(
-            name="➕ Adicionar Membro",
-            value="> Adiciona um usuário ao canal do ticket.",
-            inline=True,
-        )
-        embed.add_field(
-            name="➖ Remover Membro",
-            value="> Remove um usuário do canal do ticket.",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(
-            name="✏️ Renomear Canal",
-            value="> Altera o nome do canal do ticket.",
-            inline=True,
-        )
-        embed.add_field(
-            name="📬 Notificar na DM",
-            value="> Envia uma mensagem privada ao cliente.",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(
-            name="✖️ Finalizar Ticket",
-            value="> Encerra e deleta o canal do ticket.",
-            inline=True,
-        )
-        embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
-        embed.timestamp = discord.utils.utcnow()
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        header.set_thumbnail(url=config.LOGO_URL)
+
+        await interaction.response.send_message(embed=header, ephemeral=True)
+
+        # Adicionar Membro
+        e1 = discord.Embed(color=config.COR_PRINCIPAL)
+        e1.description = "**• Adicionar Membro**\nAdiciona um membro ao ticket"
+        await interaction.followup.send(embed=e1, view=BtnAdicionar(self.canal_id), ephemeral=True)
+
+        # Remover Membro
+        e2 = discord.Embed(color=config.COR_PRINCIPAL)
+        e2.description = "**• Remover Membro**\nRemove um membro do ticket"
+        await interaction.followup.send(embed=e2, view=BtnRemover(self.canal_id), ephemeral=True)
+
+        # Renomear Canal
+        e3 = discord.Embed(color=config.COR_PRINCIPAL)
+        e3.description = "**• Renomear Canal**\nRenomeia o nome do ticket."
+        await interaction.followup.send(embed=e3, view=BtnRenomear(self.canal_id), ephemeral=True)
+
+        # Notificar Membro
+        e4 = discord.Embed(color=config.COR_PRINCIPAL)
+        e4.description = "**• Notificar Membro**\nNotifica o autor do ticket no privado."
+        await interaction.followup.send(embed=e4, view=BtnNotificar(self.ticket_id), ephemeral=True)
+
+        # Finalizar Ticket
+        e5 = discord.Embed(color=config.COR_ERRO)
+        e5.description = "**• Finalizar Ticket**\nInicia o processo de fechamento do ticket."
+        await interaction.followup.send(embed=e5, view=BtnFinalizar(self.ticket_id), ephemeral=True)
 
     @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", custom_id="btn_finalizar", row=0, disabled=True)
     async def finalizar(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -460,31 +463,51 @@ class ModalNotificarMembro(discord.ui.Modal, title="📬 Notificar Dono do Ticke
             await interaction.response.send_message(f"❌ Erro: {e}", ephemeral=True)
 
 
+class BtnAdicionar(discord.ui.View):
+    def __init__(self, canal_id):
+        super().__init__(timeout=120)
+        self.canal_id = canal_id
+    @discord.ui.button(label="Adicionar Membro", style=discord.ButtonStyle.danger, emoji="🟢")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalAdicionarMembro(self.canal_id))
+
+class BtnRemover(discord.ui.View):
+    def __init__(self, canal_id):
+        super().__init__(timeout=120)
+        self.canal_id = canal_id
+    @discord.ui.button(label="Remover Membro", style=discord.ButtonStyle.danger, emoji="🔴")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalRemoverMembro(self.canal_id))
+
+class BtnRenomear(discord.ui.View):
+    def __init__(self, canal_id):
+        super().__init__(timeout=120)
+        self.canal_id = canal_id
+    @discord.ui.button(label="Renomear", style=discord.ButtonStyle.secondary, emoji="✏️")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalRenomearCanal(self.canal_id))
+
+class BtnNotificar(discord.ui.View):
+    def __init__(self, ticket_id):
+        super().__init__(timeout=120)
+        self.ticket_id = ticket_id
+    @discord.ui.button(label="Notificar", style=discord.ButtonStyle.primary, emoji="📬")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalNotificarMembro(self.ticket_id))
+
+class BtnFinalizar(discord.ui.View):
+    def __init__(self, ticket_id):
+        super().__init__(timeout=120)
+        self.ticket_id = ticket_id
+    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await finalizar_ticket(interaction, self.ticket_id)
+
 class ViewPainelAdmin(discord.ui.View):
     def __init__(self, ticket_id: str, canal_id: int):
         super().__init__(timeout=120)
         self.ticket_id = ticket_id
         self.canal_id = canal_id
-
-    @discord.ui.button(label="Adicionar Membro", style=discord.ButtonStyle.success, emoji="➕", row=0)
-    async def adicionar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalAdicionarMembro(self.canal_id))
-
-    @discord.ui.button(label="Remover Membro", style=discord.ButtonStyle.danger, emoji="➖", row=0)
-    async def remover(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalRemoverMembro(self.canal_id))
-
-    @discord.ui.button(label="Renomear Canal", style=discord.ButtonStyle.secondary, emoji="✏️", row=0)
-    async def renomear(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalRenomearCanal(self.canal_id))
-
-    @discord.ui.button(label="Notificar na DM", style=discord.ButtonStyle.primary, emoji="📬", row=1)
-    async def notificar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalNotificarMembro(self.ticket_id))
-
-    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", row=1)
-    async def finalizar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await finalizar_ticket(interaction, self.ticket_id)
 
 
 # ──────────────────────────────────────────────
@@ -638,42 +661,40 @@ class TicketCog(commands.Cog):
             )
             return
 
-        view = ViewPainelAdmin(ticket_id=ticket["ticket_id"], canal_id=interaction.channel_id)
-        embed = discord.Embed(color=config.COR_PRINCIPAL)
-        embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
-        embed.description = "Gerencie este ticket usando os botões abaixo:\n\u200b"
-        embed.add_field(name="🎫 Ticket ID", value=f"> `{ticket['ticket_id']}`", inline=True)
-        embed.add_field(name="🗂️ Categoria", value=f"> {ticket['categoria']}", inline=True)
-        embed.add_field(name="📌 Assunto", value=f"> {ticket['assunto']}", inline=False)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
-        embed.add_field(
-            name="➕ Adicionar Membro",
-            value="> Adiciona um usuário ao canal do ticket.",
-            inline=True,
+        ticket_id = ticket["ticket_id"]
+        canal_id = interaction.channel_id
+
+        header = discord.Embed(color=config.COR_PRINCIPAL)
+        header.set_author(name="🔒 PAINEL ADMINISTRATIVO DO TICKET", icon_url=config.LOGO_URL)
+        header.description = (
+            f"Olá {interaction.user.mention}, seja bem-vindo ao painel administrativo do ticket.\n"
+            f"Aqui você encontrará todas as opções de gerenciamento do ticket."
         )
-        embed.add_field(
-            name="➖ Remover Membro",
-            value="> Remove um usuário do canal do ticket.",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(
-            name="✏️ Renomear Canal",
-            value="> Altera o nome do canal do ticket.",
-            inline=True,
-        )
-        embed.add_field(
-            name="📬 Notificar na DM",
-            value="> Envia uma mensagem privada ao cliente.",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(
-            name="✖️ Finalizar Ticket",
-            value="> Encerra e deleta o canal do ticket.",
-            inline=True,
-        )
-        embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
-        embed.timestamp = discord.utils.utcnow()
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-        await log_comando(interaction.guild, interaction.user, "/paineladmin", ticket["ticket_id"])
+        header.add_field(name="🎫 Ticket ID", value=f"`{ticket_id}`", inline=True)
+        header.add_field(name="🗂️ Categoria", value=ticket["categoria"], inline=True)
+        header.add_field(name="📌 Assunto", value=ticket["assunto"], inline=False)
+        header.set_thumbnail(url=config.LOGO_URL)
+
+        await interaction.response.send_message(embed=header, ephemeral=True)
+
+        e1 = discord.Embed(color=config.COR_PRINCIPAL)
+        e1.description = "**• Adicionar Membro**\nAdiciona um membro ao ticket"
+        await interaction.followup.send(embed=e1, view=BtnAdicionar(canal_id), ephemeral=True)
+
+        e2 = discord.Embed(color=config.COR_PRINCIPAL)
+        e2.description = "**• Remover Membro**\nRemove um membro do ticket"
+        await interaction.followup.send(embed=e2, view=BtnRemover(canal_id), ephemeral=True)
+
+        e3 = discord.Embed(color=config.COR_PRINCIPAL)
+        e3.description = "**• Renomear Canal**\nRenomeia o nome do ticket."
+        await interaction.followup.send(embed=e3, view=BtnRenomear(canal_id), ephemeral=True)
+
+        e4 = discord.Embed(color=config.COR_PRINCIPAL)
+        e4.description = "**• Notificar Membro**\nNotifica o autor do ticket no privado."
+        await interaction.followup.send(embed=e4, view=BtnNotificar(ticket_id), ephemeral=True)
+
+        e5 = discord.Embed(color=config.COR_ERRO)
+        e5.description = "**• Finalizar Ticket**\nInicia o processo de fechamento do ticket."
+        await interaction.followup.send(embed=e5, view=BtnFinalizar(ticket_id), ephemeral=True)
+
+        await log_comando(interaction.guild, interaction.user, "/paineladmin", ticket_id)

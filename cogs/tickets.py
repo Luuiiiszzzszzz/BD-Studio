@@ -587,8 +587,8 @@ class TicketCog(commands.Cog):
         embed.add_field(
             name="📌 Regras de Atendimento",
             value=(
-                "> ❌ Não abra tickets sem necessidade\n"
-                "> ❌ Não marque a equipe excessivamente\n"
+                "> 🚫 Não abra tickets sem necessidade\n"
+                "> 🚫 Não marque a equipe excessivamente\n"
                 "> ✅ Forneça o máximo de detalhes possível"
             ),
             inline=False,

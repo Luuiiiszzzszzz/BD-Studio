@@ -6,6 +6,7 @@ import string
 import datetime
 import config
 from utils.logger import log_ticket, log_comando
+from utils.transcript import gerar_transcript
 from utils.db import Database
 
 db = Database()
@@ -456,6 +457,29 @@ async def finalizar_ticket(interaction: discord.Interaction, ticket_id: str):
                 pass
 
     db.fechar_ticket(ticket_id)
+
+    # Gerar e enviar transcript
+    try:
+        caminho_html = await gerar_transcript(interaction.channel, ticket or {"ticket_id": ticket_id, "categoria": "?", "assunto": "?"}, interaction.guild)
+        arquivo_transcript = discord.File(caminho_html, filename=f"transcript-{ticket_id}.html")
+        log_ch = interaction.guild.get_channel(config.LOG_TRANSCRIPTS_ID)
+        if log_ch:
+            t_embed = discord.Embed(
+                title="📄 Transcript Gerado",
+                color=config.COR_INFO,
+            )
+            t_embed.add_field(name="🎫 Ticket ID", value=f"`{ticket_id}`", inline=True)
+            t_embed.add_field(name="🗂️ Categoria", value=ticket["categoria"] if ticket else "?", inline=True)
+            t_embed.add_field(name="👤 Aberto por", value=f"<@{ticket['user_id']}>" if ticket else "?", inline=True)
+            t_embed.add_field(name="🔒 Finalizado por", value=interaction.user.mention, inline=True)
+            t_embed.set_footer(text="BD Studio • Transcripts", icon_url=config.LOGO_URL)
+            t_embed.timestamp = discord.utils.utcnow()
+            await log_ch.send(embed=t_embed, file=arquivo_transcript)
+        import os
+        os.remove(caminho_html)
+    except Exception as e:
+        print(f"[Transcript] Erro: {e}")
+
     await log_ticket(
         guild=interaction.guild,
         acao="🔴 Ticket Finalizado",

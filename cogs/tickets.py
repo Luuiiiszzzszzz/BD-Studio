@@ -643,11 +643,8 @@ class TicketCog(commands.Cog):
 
         view = ViewPainelAdmin(ticket_id=ticket["ticket_id"], canal_id=interaction.channel_id)
         embed = discord.Embed(color=config.COR_PRINCIPAL)
-        embed.set_author(name="🔒 PAINEL ADMINISTRATIVO DO TICKET", icon_url=config.LOGO_URL)
-        embed.description = (
-            f"Olá {interaction.user.mention}, seja bem-vindo ao painel administrativo.\n"
-            f"Use os botões abaixo para gerenciar este ticket.\n\u200b"
-        )
+        embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
+        embed.description = f"Olá {interaction.user.mention}, use os botões abaixo para gerenciar este ticket.\n\u200b"
         embed.add_field(name="🎫 Ticket ID", value=f"`{ticket['ticket_id']}`", inline=True)
         embed.add_field(name="🗂️ Categoria", value=ticket["categoria"], inline=True)
         embed.add_field(name="📌 Assunto", value=ticket["assunto"], inline=False)

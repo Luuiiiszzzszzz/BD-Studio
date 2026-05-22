@@ -514,8 +514,11 @@ async def finalizar_ticket(interaction: discord.Interaction, ticket_id: str):
 
     # Gerar e enviar transcript
     try:
-        caminho_html = await gerar_transcript(interaction.channel, ticket or {"ticket_id": ticket_id, "categoria": "?", "assunto": "?"}, interaction.guild)
-        arquivo_transcript = discord.File(caminho_html, filename=f"transcript-{ticket_id}.html")
+        caminho_html, url_pages = await gerar_transcript(
+            interaction.channel,
+            ticket or {"ticket_id": ticket_id, "categoria": "?", "assunto": "?"},
+            interaction.guild
+        )
         log_ch = interaction.guild.get_channel(config.LOG_TRANSCRIPTS_ID)
         if log_ch:
             t_embed = discord.Embed(
@@ -526,9 +529,19 @@ async def finalizar_ticket(interaction: discord.Interaction, ticket_id: str):
             t_embed.add_field(name="🗂️ Categoria", value=ticket["categoria"] if ticket else "?", inline=True)
             t_embed.add_field(name="👤 Aberto por", value=f"<@{ticket['user_id']}>" if ticket else "?", inline=True)
             t_embed.add_field(name="🔒 Finalizado por", value=interaction.user.mention, inline=True)
+            if url_pages:
+                t_embed.add_field(name="🌐 Link", value=f"[Abrir Transcript]({url_pages})", inline=False)
             t_embed.set_footer(text="BD Studio • Transcripts", icon_url=config.LOGO_URL)
             t_embed.timestamp = discord.utils.utcnow()
-            await log_ch.send(embed=t_embed, file=arquivo_transcript)
+            view_transcript = discord.ui.View()
+            if url_pages:
+                view_transcript.add_item(discord.ui.Button(
+                    label="📄 Abrir Transcript",
+                    url=url_pages,
+                    style=discord.ButtonStyle.link
+                ))
+            arquivo_transcript = discord.File(caminho_html, filename=f"transcript-{ticket_id}.html")
+            await log_ch.send(embed=t_embed, file=arquivo_transcript, view=view_transcript if url_pages else discord.ui.View())
         import os
         os.remove(caminho_html)
     except Exception as e:

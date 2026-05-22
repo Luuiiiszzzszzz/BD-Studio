@@ -245,19 +245,40 @@ class ViewTicketAberto(discord.ui.View):
             await interaction.response.send_message("❌ Sem permissão.", ephemeral=True)
             return
         view = ViewPainelAdmin(ticket_id=self.ticket_id, canal_id=self.canal_id)
-        embed = discord.Embed(
-            title="🔒 Painel Administrativo",
-            description=(
-                "Selecione uma ação abaixo para gerenciar este ticket:\n\n"
-                "➕ **Adicionar Membro** — Adiciona um usuário ao ticket\n"
-                "➖ **Remover Membro** — Remove um usuário do ticket\n"
-                "✏️ **Renomear Canal** — Altera o nome do canal\n"
-                "📬 **Notificar na DM** — Envia mensagem privada\n"
-                "✖️ **Finalizar** — Encerra e deleta o ticket"
-            ),
-            color=config.COR_INFO
+        embed = discord.Embed(color=config.COR_PRINCIPAL)
+        embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
+        embed.description = (
+            "Gerencie este ticket usando os botões abaixo:\n\u200b"
+        )
+        embed.add_field(
+            name="➕ Adicionar Membro",
+            value="> Adiciona um usuário ao canal do ticket.",
+            inline=True,
+        )
+        embed.add_field(
+            name="➖ Remover Membro",
+            value="> Remove um usuário do canal do ticket.",
+            inline=True,
+        )
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(
+            name="✏️ Renomear Canal",
+            value="> Altera o nome do canal do ticket.",
+            inline=True,
+        )
+        embed.add_field(
+            name="📬 Notificar na DM",
+            value="> Envia uma mensagem privada ao cliente.",
+            inline=True,
+        )
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(
+            name="✖️ Finalizar Ticket",
+            value="> Encerra e deleta o canal do ticket.",
+            inline=True,
         )
         embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
+        embed.timestamp = discord.utils.utcnow()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", custom_id="btn_finalizar", row=0, disabled=True)
@@ -613,19 +634,40 @@ class TicketCog(commands.Cog):
             return
 
         view = ViewPainelAdmin(ticket_id=ticket["ticket_id"], canal_id=interaction.channel_id)
-        embed = discord.Embed(color=config.COR_INFO)
+        embed = discord.Embed(color=config.COR_PRINCIPAL)
         embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
-        embed.description = (
-            "Selecione uma ação para gerenciar este ticket:\n\n"
-            "➕ **Adicionar Membro** — Adiciona um usuário ao ticket\n"
-            "➖ **Remover Membro** — Remove um usuário do ticket\n"
-            "✏️ **Renomear Canal** — Altera o nome do canal\n"
-            "📬 **Notificar na DM** — Envia mensagem privada\n"
-            "✖️ **Finalizar** — Encerra e deleta o ticket"
+        embed.description = "Gerencie este ticket usando os botões abaixo:\n\u200b"
+        embed.add_field(name="🎫 Ticket ID", value=f"> `{ticket['ticket_id']}`", inline=True)
+        embed.add_field(name="🗂️ Categoria", value=f"> {ticket['categoria']}", inline=True)
+        embed.add_field(name="📌 Assunto", value=f"> {ticket['assunto']}", inline=False)
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+        embed.add_field(
+            name="➕ Adicionar Membro",
+            value="> Adiciona um usuário ao canal do ticket.",
+            inline=True,
         )
-        embed.add_field(name="╔═ 🎫 Ticket ID", value=f"╚══ `{ticket['ticket_id']}`", inline=True)
-        embed.add_field(name="╔═ 🗂️ Categoria", value=f"╚══ {ticket['categoria']}", inline=True)
-        embed.add_field(name="╔═ 📌 Assunto", value=f"╚══ {ticket['assunto']}", inline=False)
+        embed.add_field(
+            name="➖ Remover Membro",
+            value="> Remove um usuário do canal do ticket.",
+            inline=True,
+        )
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(
+            name="✏️ Renomear Canal",
+            value="> Altera o nome do canal do ticket.",
+            inline=True,
+        )
+        embed.add_field(
+            name="📬 Notificar na DM",
+            value="> Envia uma mensagem privada ao cliente.",
+            inline=True,
+        )
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(
+            name="✖️ Finalizar Ticket",
+            value="> Encerra e deleta o canal do ticket.",
+            inline=True,
+        )
         embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
         embed.timestamp = discord.utils.utcnow()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

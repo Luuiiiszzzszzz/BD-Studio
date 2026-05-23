@@ -523,6 +523,26 @@ class ViewPainelAdmin(discord.ui.View):
         self.ticket_id = ticket_id
         self.canal_id = canal_id
 
+    @discord.ui.button(label="Adicionar Membro", style=discord.ButtonStyle.success, emoji="➕", row=0)
+    async def adicionar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalAdicionarMembro(self.canal_id))
+
+    @discord.ui.button(label="Remover Membro", style=discord.ButtonStyle.danger, emoji="➖", row=0)
+    async def remover(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalRemoverMembro(self.canal_id))
+
+    @discord.ui.button(label="Renomear Canal", style=discord.ButtonStyle.secondary, emoji="✏️", row=0)
+    async def renomear(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalRenomearCanal(self.canal_id))
+
+    @discord.ui.button(label="Notificar na DM", style=discord.ButtonStyle.primary, emoji="📬", row=1)
+    async def notificar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalNotificarMembro(self.ticket_id))
+
+    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", row=1)
+    async def finalizar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await finalizar_ticket(interaction, self.ticket_id)
+
 
 # ──────────────────────────────────────────────
 #  HELPER: finalizar ticket

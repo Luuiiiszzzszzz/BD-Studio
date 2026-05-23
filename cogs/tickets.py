@@ -463,36 +463,146 @@ class ModalNotificarMembro(discord.ui.Modal, title="📬 Notificar Dono do Ticke
             await interaction.response.send_message(f"❌ Erro: {e}", ephemeral=True)
 
 
+# ── Select: Adicionar Membro ──
+class SelectAdicionarMembro(discord.ui.Select):
+    def __init__(self, canal_id: int, membros: list):
+        self.canal_id = canal_id
+        options = [
+            discord.SelectOption(label=m.display_name, value=str(m.id), description=str(m))
+            for m in membros[:25]
+        ]
+        super().__init__(placeholder="Selecione um membro para adicionar", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        canal = interaction.guild.get_channel(self.canal_id)
+        membro = interaction.guild.get_member(int(self.values[0]))
+        await canal.set_permissions(membro, view_channel=True, send_messages=True, read_message_history=True)
+        embed = discord.Embed(description=f"➕ {membro.mention} foi adicionado ao ticket.", color=config.COR_SUCESSO)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await canal.send(embed=embed)
+        await log_comando(interaction.guild, interaction.user, "Adicionar Membro", str(self.canal_id), extra=str(membro))
+
+class ViewSelectAdicionar(discord.ui.View):
+    def __init__(self, canal_id: int, membros: list):
+        super().__init__(timeout=120)
+        self.add_item(SelectAdicionarMembro(canal_id, membros))
+
+# ── Select: Remover Membro ──
+class SelectRemoverMembro(discord.ui.Select):
+    def __init__(self, canal_id: int, membros: list):
+        self.canal_id = canal_id
+        options = [
+            discord.SelectOption(label=m.display_name, value=str(m.id), description=str(m))
+            for m in membros[:25]
+        ]
+        super().__init__(placeholder="Selecione um membro para remover", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        canal = interaction.guild.get_channel(self.canal_id)
+        membro = interaction.guild.get_member(int(self.values[0]))
+        await canal.set_permissions(membro, overwrite=None)
+        embed = discord.Embed(description=f"➖ {membro.mention} foi removido do ticket.", color=config.COR_ERRO)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await canal.send(embed=embed)
+        await log_comando(interaction.guild, interaction.user, "Remover Membro", str(self.canal_id), extra=str(membro))
+
+class ViewSelectRemover(discord.ui.View):
+    def __init__(self, canal_id: int, membros: list):
+        super().__init__(timeout=120)
+        self.add_item(SelectRemoverMembro(canal_id, membros))
+
+# ── Botão: Renomear ──
+class ViewBtnRenomear(discord.ui.View):
+    def __init__(self, canal_id: int):
+        super().__init__(timeout=120)
+        self.canal_id = canal_id
+
+    @discord.ui.button(label="Renomear", style=discord.ButtonStyle.secondary, emoji="✏️")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalRenomearCanal(self.canal_id))
+
+# ── Botão: Notificar ──
+class ViewBtnNotificar(discord.ui.View):
+    def __init__(self, ticket_id: str):
+        super().__init__(timeout=120)
+        self.ticket_id = ticket_id
+
+    @discord.ui.button(label="Notificar", style=discord.ButtonStyle.primary, emoji="📬")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ModalNotificarMembro(self.ticket_id))
+
+# ── Botão: Finalizar ──
+class ViewBtnFinalizar(discord.ui.View):
+    def __init__(self, ticket_id: str):
+        super().__init__(timeout=120)
+        self.ticket_id = ticket_id
+
+    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️")
+    async def btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await finalizar_ticket(interaction, self.ticket_id)
+
 class ViewPainelAdmin(discord.ui.View):
     def __init__(self, ticket_id: str, canal_id: int):
         super().__init__(timeout=120)
         self.ticket_id = ticket_id
         self.canal_id = canal_id
 
-    @discord.ui.button(label="Adicionar Membro", style=discord.ButtonStyle.success, emoji="➕", row=0)
-    async def adicionar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalAdicionarMembro(self.canal_id))
-
-    @discord.ui.button(label="Remover Membro", style=discord.ButtonStyle.danger, emoji="➖", row=0)
-    async def remover(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalRemoverMembro(self.canal_id))
-
-    @discord.ui.button(label="Renomear Canal", style=discord.ButtonStyle.secondary, emoji="✏️", row=0)
-    async def renomear(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalRenomearCanal(self.canal_id))
-
-    @discord.ui.button(label="Notificar na DM", style=discord.ButtonStyle.primary, emoji="📬", row=1)
-    async def notificar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ModalNotificarMembro(self.ticket_id))
-
-    @discord.ui.button(label="Finalizar Ticket", style=discord.ButtonStyle.danger, emoji="✖️", row=1)
-    async def finalizar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await finalizar_ticket(interaction, self.ticket_id)
-
 
 # ──────────────────────────────────────────────
 #  HELPER: finalizar ticket
 # ──────────────────────────────────────────────
+
+async def enviar_painel_admin(interaction: discord.Interaction, ticket_id: str, canal_id: int):
+    """Envia o painel admin com seções separadas."""
+    canal = interaction.guild.get_channel(canal_id)
+
+    # Pegar membros que têm acesso ao canal (excluindo bots e o próprio usuário)
+    membros = [
+        m for m in interaction.guild.members
+        if not m.bot and m.id != interaction.user.id
+    ]
+
+    # Header
+    header = discord.Embed(color=config.COR_PRINCIPAL)
+    header.set_author(name="🔒 PAINEL ADMINISTRATIVO DO TICKET", icon_url=config.LOGO_URL)
+    header.description = (
+        f"Olá {interaction.user.mention}, seja bem-vindo ao painel administrativo do ticket.\n"
+        f"Aqui você encontrará todas as opções de gerenciamento do ticket, caso haja alguma "
+        f"dúvida se informe com os responsáveis."
+    )
+    header.set_thumbnail(url=config.LOGO_URL)
+    await interaction.response.send_message(embed=header, ephemeral=True)
+
+    # Adicionar Membro
+    e1 = discord.Embed(color=0x2b2d31)
+    e1.description = "**• Adicionar Membro**\nAdiciona um membro ao ticket"
+    await interaction.followup.send(embed=e1, view=ViewSelectAdicionar(canal_id, membros), ephemeral=True)
+
+    # Remover Membro
+    membros_no_canal = [
+        m for m in interaction.guild.members
+        if not m.bot and canal and canal.permissions_for(m).view_channel
+        and m.id != interaction.user.id
+    ]
+    e2 = discord.Embed(color=0x2b2d31)
+    e2.description = "**• Remover Membro**\nRemove um membro do ticket"
+    await interaction.followup.send(embed=e2, view=ViewSelectRemover(canal_id, membros_no_canal if membros_no_canal else membros), ephemeral=True)
+
+    # Renomear Canal
+    e3 = discord.Embed(color=0x2b2d31)
+    e3.description = "**• Renomear Canal**\nRenomeia o nome do ticket."
+    await interaction.followup.send(embed=e3, view=ViewBtnRenomear(canal_id), ephemeral=True)
+
+    # Notificar Membro
+    e4 = discord.Embed(color=0x2b2d31)
+    e4.description = "**• Notificar Membro**\nNotifica o autor do ticket no privado."
+    await interaction.followup.send(embed=e4, view=ViewBtnNotificar(ticket_id), ephemeral=True)
+
+    # Finalizar Ticket
+    e5 = discord.Embed(color=0x2b2d31)
+    e5.description = "**• Finalizar Ticket**\nInicia o processo de fechamento do ticket."
+    await interaction.followup.send(embed=e5, view=ViewBtnFinalizar(ticket_id), ephemeral=True)
+
 async def finalizar_ticket(interaction: discord.Interaction, ticket_id: str):
     staff_role = interaction.guild.get_role(config.STAFF_ROLE_ID)
     admin_role = interaction.guild.get_role(config.ADMIN_ROLE_ID)
@@ -641,23 +751,5 @@ class TicketCog(commands.Cog):
             )
             return
 
-        view = ViewPainelAdmin(ticket_id=ticket["ticket_id"], canal_id=interaction.channel_id)
-        embed = discord.Embed(color=config.COR_PRINCIPAL)
-        embed.set_author(name="🔒 Painel Administrativo — BD Studio", icon_url=config.LOGO_URL)
-        embed.description = f"Olá {interaction.user.mention}, use os botões abaixo para gerenciar este ticket.\n\u200b"
-        embed.add_field(name="🎫 Ticket ID", value=f"`{ticket['ticket_id']}`", inline=True)
-        embed.add_field(name="🗂️ Categoria", value=ticket["categoria"], inline=True)
-        embed.add_field(name="📌 Assunto", value=ticket["assunto"], inline=False)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
-        embed.add_field(name="➕ Adicionar Membro", value="> Adiciona um usuário ao ticket.", inline=True)
-        embed.add_field(name="➖ Remover Membro", value="> Remove um usuário do ticket.", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(name="✏️ Renomear Canal", value="> Altera o nome do canal.", inline=True)
-        embed.add_field(name="📬 Notificar na DM", value="> Envia DM ao dono do ticket.", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
-        embed.add_field(name="✖️ Finalizar Ticket", value="> Encerra e deleta o ticket.", inline=True)
-        embed.set_thumbnail(url=config.LOGO_URL)
-        embed.set_footer(text="BD Studio • Painel Admin", icon_url=config.LOGO_URL)
-        embed.timestamp = discord.utils.utcnow()
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await enviar_painel_admin(interaction, ticket["ticket_id"], interaction.channel_id)
         await log_comando(interaction.guild, interaction.user, "/paineladmin", ticket["ticket_id"])
